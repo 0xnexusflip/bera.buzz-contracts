@@ -61,7 +61,7 @@ describe("BuzzTokenFactory Tests", () => {
 
         // Deploy factory
         const Factory = await ethers.getContractFactory("BuzzTokenFactory");
-        factory = await Factory.connect(ownerSigner).deploy(ownerSigner.address, create3Factory.address, feeManager.address, highlightsSuffix);
+        factory = await Factory.connect(ownerSigner).deploy(create3Factory.address, feeManager.address, highlightsSuffix);
 
         // Deploy liquidity manager
         const BexLiquidityManager = await ethers.getContractFactory("BexLiquidityManager");
@@ -108,9 +108,8 @@ describe("BuzzTokenFactory Tests", () => {
         it("should set the createDeployer", async () => {
             expect(await factory.CREATE_DEPLOYER()).to.be.equal(create3Factory.address);
         });
-        it("should grant the ownerRole to the owner", async () => {
-            const ownerRoleHash = await factory.OWNER_ROLE();
-            expect(await factory.hasRole(ownerRoleHash, ownerSigner.address)).to.be.equal(true);
+        it("should set the owner", async () => {
+            expect(await factory.owner()).to.be.equal(ownerSigner.address);
         });
         it("should set the feeManager", async () => {
             expect(await factory.feeManager()).to.be.equal(feeManager.address);
@@ -281,7 +280,7 @@ describe("BuzzTokenFactory Tests", () => {
             const suffix = ethers.utils.arrayify("0x1bee");
             // Deploy factory
             const Factory = await ethers.getContractFactory("BuzzTokenFactory");
-            const newFactory = await Factory.connect(ownerSigner).deploy(ownerSigner.address, create3Factory.address, feeManager.address, suffix);
+            const newFactory = await Factory.connect(ownerSigner).deploy(create3Factory.address, feeManager.address, suffix);
 
             // Admin: Whitelist base token in Factory
             await newFactory.connect(ownerSigner).setAllowedBaseToken(wBera.address, ethers.utils.parseEther("0.01"), ethers.utils.parseEther("100"), true);
@@ -525,13 +524,13 @@ describe("BuzzTokenFactory Tests", () => {
 
             await expect(factory.connect(ownerSigner).setVault(expVault.address, true)).to.emit(factory, "VaultSet").withArgs(expVault.address, true);
         });
-        it("should revert if the caller doesn't have an owner role", async () => {
-            await expect(factory.connect(user1Signer).setVault(expVault.address, true)).to.be.revertedWith('AccessControl: account 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 is missing role 0xb19546dff01e856fb3f010c267a7b1c60363cf8a4664e21cc89c26224620214e');
+        it("should revert if the caller is not the owner", async () => {
+            await expect(factory.connect(user1Signer).setVault(expVault.address, true)).to.be.revertedWith('Ownable: caller is not the owner');
         });
     });
     describe("setAllowTokenCreation", () => {
-        it("should revert if the caller doesn't have an owner role", async () => {
-            await expect(factory.connect(user1Signer).setAllowTokenCreation(true)).to.be.revertedWith('AccessControl: account 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 is missing role 0xb19546dff01e856fb3f010c267a7b1c60363cf8a4664e21cc89c26224620214e');
+        it("should revert if the caller is not the owner", async () => {
+            await expect(factory.connect(user1Signer).setAllowTokenCreation(true)).to.be.revertedWith('Ownable: caller is not the owner');
         });
         it("should set the token creation status", async () => {
             expect(await factory.allowTokenCreation()).to.be.equal(true);
@@ -544,8 +543,8 @@ describe("BuzzTokenFactory Tests", () => {
         });
     });
     describe("setFeeManager", () => {
-        it("should revert if the caller doesn't have an owner role", async () => {
-            await expect(factory.connect(user1Signer).setFeeManager(user1Signer.address)).to.be.revertedWith('AccessControl: account 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 is missing role 0xb19546dff01e856fb3f010c267a7b1c60363cf8a4664e21cc89c26224620214e');
+        it("should revert if the caller is not the owner", async () => {
+            await expect(factory.connect(user1Signer).setFeeManager(user1Signer.address)).to.be.revertedWith('Ownable: caller is not the owner');
         });
         it("should revert if the feeManager address is the zero address", async () => {
             await expect(factory.connect(ownerSigner).setFeeManager(ethers.constants.AddressZero)).to.be.revertedWithCustomError(factory, "BuzzToken_AddressZero");
@@ -563,8 +562,8 @@ describe("BuzzTokenFactory Tests", () => {
         });
     });
     describe("setAllowedBaseToken", () => {
-        it("should revert if the caller doesn't have an owner role", async () => {
-            await expect(factory.connect(user1Signer).setAllowedBaseToken(wBera.address, ethers.utils.parseEther("1"), ethers.utils.parseEther("1000"), true)).to.be.revertedWith('AccessControl: account 0x70997970c51812dc3a010c7d01b50e0d17dc79c8 is missing role 0xb19546dff01e856fb3f010c267a7b1c60363cf8a4664e21cc89c26224620214e');
+        it("should revert if the caller is not the owner", async () => {
+            await expect(factory.connect(user1Signer).setAllowedBaseToken(wBera.address, ethers.utils.parseEther("1"), ethers.utils.parseEther("1000"), true)).to.be.revertedWith('Ownable: caller is not the owner');
         });
         it("should revert if the base token address is the zero address", async () => {
             await expect(factory.connect(ownerSigner).setAllowedBaseToken(ethers.constants.AddressZero, ethers.utils.parseEther("1"), ethers.utils.parseEther("1000"), true)).to.be.revertedWithCustomError(factory, "BuzzToken_AddressZero");

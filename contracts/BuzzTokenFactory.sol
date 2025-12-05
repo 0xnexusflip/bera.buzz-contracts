@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {BuzzToken} from "./BuzzToken.sol";
 import {ICREATE3Factory} from "./interfaces/create3/ICREATE3Factory.sol";
@@ -15,7 +15,7 @@ import {IFeeManager} from "./interfaces/IFeeManager.sol";
  * @notice This contract is the factory for deploying new tokens
  * @author nexusflip, 0xMitzie
  */
-contract BuzzTokenFactory is AccessControl, IBuzzTokenFactory {
+contract BuzzTokenFactory is Ownable, IBuzzTokenFactory {
     using SafeERC20 for IERC20;
 
     /// @notice Event emitted when a new token is created
@@ -87,11 +87,9 @@ contract BuzzTokenFactory is AccessControl, IBuzzTokenFactory {
 
     /// @notice The initial supply of the token
     uint256 public constant INITIAL_SUPPLY = 1e27;
-    /// @dev access control owner role.
-    bytes32 public immutable OWNER_ROLE;
     /// @notice The address of the CREATE3 deployer
     address public immutable CREATE_DEPLOYER;
-    /// @notice Whether token creation is allowed. Controlled by accounts holding OWNER_ROLE.
+    /// @notice Whether token creation is allowed. Controlled by the owner.
     bool public allowTokenCreation;
     /// @notice The suffix that is checked against the token address
     bytes public suffix;
@@ -107,20 +105,15 @@ contract BuzzTokenFactory is AccessControl, IBuzzTokenFactory {
 
     /**
      * @notice Constructor of the Token Factory contract
-     * @param _owner The owner of the contract
      * @param _createDeployer The address of the CREATE3 deployer
      * @param _feeManager The address of the feeManager contract
      * @param _suffix The contract suffix that is checked against the token address
      */
     constructor(
-        address _owner,
         address _createDeployer,
         address _feeManager,
         bytes memory _suffix
     ) {
-        OWNER_ROLE = keccak256("OWNER_ROLE");
-        _grantRole(OWNER_ROLE, _owner);
-
         CREATE_DEPLOYER = _createDeployer;
         feeManager = IFeeManager(_feeManager);
         suffix = _suffix;
@@ -227,7 +220,7 @@ contract BuzzTokenFactory is AccessControl, IBuzzTokenFactory {
     function setVault(
         address vault,
         bool enable
-    ) external onlyRole(OWNER_ROLE) {
+    ) external onlyOwner {
         if (vault == address(0)) revert BuzzToken_AddressZero();
 
         vaults[vault] = enable;
@@ -240,7 +233,7 @@ contract BuzzTokenFactory is AccessControl, IBuzzTokenFactory {
      */
     function setAllowTokenCreation(
         bool allowTokenCreation_
-    ) external onlyRole(OWNER_ROLE) {
+    ) external onlyOwner {
         allowTokenCreation = allowTokenCreation_;
         emit TokenCreationSet(allowTokenCreation);
     }
@@ -251,7 +244,7 @@ contract BuzzTokenFactory is AccessControl, IBuzzTokenFactory {
      */
     function setFeeManager(
         address payable feeManager_
-    ) external onlyRole(OWNER_ROLE) {
+    ) external onlyOwner {
         if (feeManager_ == address(0)) revert BuzzToken_AddressZero();
 
         feeManager = IFeeManager(feeManager_);
@@ -270,7 +263,7 @@ contract BuzzTokenFactory is AccessControl, IBuzzTokenFactory {
         uint256 minReserveAmount,
         uint256 minRaiseAmount,
         bool enable
-    ) external onlyRole(OWNER_ROLE) {
+    ) external onlyOwner {
         if (baseToken == address(0)) revert BuzzToken_AddressZero();
 
         if (
